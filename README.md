@@ -1,4 +1,3 @@
-
 fbm
 ===
 
@@ -40,6 +39,7 @@ Contribute
 ----------
 This is my first Gem, and I'm very new to this. However, this app does just what I want now.
 
+Contributions welcome. If you want you can make this app more structured, or make it print to stderr instead of stdout, or add unit tests.
 
 
 
