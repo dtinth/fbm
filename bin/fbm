@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+
+require 'fbm'
+require 'commander/import'
+
+program :name, 'fbm'
+program :version, '0.0.1'
+program :description, 'Send Facebook Message'
+
+fbm = Fbm.new
+
+command :login do |c|
+  c.syntax = 'fbm login'
+  c.description = 'Login to Facebook'
+  c.action do |args, options|
+    puts "Please go to"
+    puts "  #{fbm.login_url}"
+    puts ""
+    puts "When it says success, please paste the URL."
+    url = ask("Success URL: ")
+    raise "no access token found!" unless url =~ /access_token=([^&]+)/
+    fbm.access_token = token = $1
+    me = fbm.me
+    puts ""
+    puts "Hello, #{me['name']}."
+    File.open("#{ENV['HOME']}/.fbm_access_token", "w", 0600) do |f|
+      f << token
+    end
+    puts "To send message, use `fbm send [name]`"
+  end
+end
+
+command :ls do |c|
+  c.syntax = 'fbm ls username'
+  c.description = 'Find friends matching list'
+  c.action do |args, options|
+    load_access_token(fbm)
+    list = filter_friends(fbm.friends, args)
+    print_friend_list(list)
+  end
+end
+
+command :send do |c|
+  c.syntax = 'fbm send username'
+  c.description = 'Send facebook message'
+  c.option '--all'
+  c.action do |args, options|
+    begin
+      text = $stdin.read.strip
+      raise "empty message" if text.empty?
+      load_access_token(fbm)
+      list = filter_friends(fbm.friends, args)
+      if list.length == 0
+        puts "No matching users found"
+      elsif options.all || list.length == 1
+        puts "Sending message to:"
+        list.each do |friend|
+          print_friend friend
+          fbm.message friend['id'], text
+        end
+        fbm.close
+      else
+        puts "Multiple matching users found:"
+        print_friend_list(list)
+        puts ""
+        puts "Use --all to send them all."
+      end
+    rescue RestGraph::Error::InvalidAccessToken
+      puts "Access token is expired. Please run: `fbm login`."
+    end
+  end
+end
+
+def load_access_token(fbm)
+  fbm.access_token = File.read("#{ENV['HOME']}/.fbm_access_token").strip
+end
+
+def filter_friends(array, args)
+  array = array.dup
+  args.each do |arg|
+    regex = Regexp.new(arg, Regexp::IGNORECASE)
+    array.select! do |friend|
+      friend['name'] && (friend['name'] =~ regex or (friend['username'] && friend['username'] =~ regex))
+    end
+  end
+  array
+end
+
+def print_friend_list(list)
+  list.each do |friend|
+    print_friend(friend)
+  end
+end
+
+def print_friend(friend)
+  username = if friend['username'].nil? || friend['username'].empty?
+               ""
+             else
+               " (#{friend['username']})"
+             end
+  puts "- #{friend['name']}#{username}"
+end
+
+
+
+
+
+
+
+
