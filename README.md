@@ -34,6 +34,9 @@ Sending a code snippet to Gist using [Jist](https://github.com/ConradIrwin/jist)
 
     jist filename.c | fbm send Recipient
 
+Sometimes it can be a good idea to save the message that you send.
+
+    jist filename.c | tee ~/.fbm_prev | fbm send Recipient
 
 Contribute
 ----------
